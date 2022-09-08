@@ -1,0 +1,8 @@
+.App {
+  font-family: sans-serif;
+  text-align: center;
+}
+.time-display {
+  font-weight: bold;
+  background-color: greenyellow;
+}
