@@ -1,108 +1,61 @@
-import "./styles.css";
+import React, {useState, useEffect} from "react";
+import {useAnimateProps} from "react-animate-props";
+import ReactDOM from "react-dom";
+import {TextField} from "@mui/material";
+import {Line, Circle} from "rc-progress";
+import Tween, {Easing} from "tweenkle";
 
-import { useInterval } from "ahooks";
-// import {Slider} from '@mui/material';
+import {ThemeProvider, createTheme} from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
 
-import {useEffect, useState} from "react";
-import useDelayedSound from './useDelayedSound';
+import "./index.css";
+import "./App.css";
 
+import TimerUI from "./TimerUI";
+import calculateSlowdown from "./calculate-slowdown";
+import TimerSpeedSelector from "./TimerSpeedSelector";
+
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+  },
+});
+
+const pluralize = (count, singularWord, pluralWord) => {
+  return count === 1 ? singularWord : pluralWord;
+};
 export default function App() {
-    const [valToEval, setValToEval] = useState("");
-  const [lastRun, setLastRun] = useState("");
+  const [timeSlowdownLevel, setTimeSlowdownLevel] = useState(-1);
+  const [speedFactor, setSpeedFactor] = useState(0);
+  const [timerSeconds, setTimerSeconds] = useState(0);
 
-    const [currentInterval, setCurrentInterval] = useState(0);
-  const secondsToTime = (seconds) =>
-    `${Math.floor(seconds / 60)}:${
-      seconds % 60 === 0 ? "00" : (seconds % 60).toFixed(4)
-    }`;
-  const [seconds, setSeconds] = useState(0);
-  const nDigitNum = (n) => Math.floor((Math.random() * Math.pow(10, n)) % 60);
-  const [time, setTime] = useState(
-    new Date(`7/10/2013 9:${nDigitNum(2)}:${nDigitNum(2)}`),
-  );
-  // new Date('7/10/2013 20:12:34')
+  const [timerRunning, setTimerRunning] = useState(false);
 
-  /* add time checkpoints
-  work unit x time then extend it
-  */
   useEffect(() => {
-    setLastRun(Math.random());
-  }, [currentInterval]);
+    setSpeedFactor(calculateSlowdown(timeSlowdownLevel));
+  }, [timeSlowdownLevel]);
 
-  const updateMSintreval = 151;
+  const initialMinutes = Math.floor(timerSeconds / 60);
+  const initialSeconds = timerSeconds % 60;
 
-  useInterval(
-    () => {
-      console.log(currentInterval);
-      setSeconds((s) => s + updateMSintreval / 1000);
-      setTime((time) => new Date(time.getTime() + updateMSintreval));
-    },
-    currentInterval ? (eval(currentInterval) || 1) * updateMSintreval : null,
-  );
-
-  const BoopButton = () => {
-      const { playAfterTime } = useDelayedSound();
-    return (
-      <button
-        onClick={() => {
-          playAfterTime(1000);
-        }}
-      >
-        Set 10m timer
-      </button>
-    );
-  };
-
+  const timerTitle =
+    initialMinutes > 0
+      ? `${initialMinutes} minute timer`
+      : `${initialSeconds} second timer`;
   return (
-    <div className="App">
-      <textarea
-        onDoubleClick={() => {
-          setCurrentInterval(valToEval);
-        }}
-        onChange={(e) => setValToEval(e.target.value)}
-        onKeyPress={(event) => {
-          if (event.key === "Enter") {
-            setCurrentInterval(valToEval);
-          }
-        }}
-        value={valToEval}
-      />
-      <h1>Hello CodeSandbox</h1>
-      <h3 className="time-display">{secondsToTime(seconds)}</h3>
-      {time.toLocaleString("en-US", {
-        hour: "numeric",
-        minute: "numeric",
-        hour12: true,
-      })}
-      <BoopButton />
-      [remember to plus slow down]
-      <br />
-      {lastRun}
-      {/* <Slider */}
-      {/*   aria-label="Custom marks" */}
-      {/*   defaultValue={20} */}
-      {/*   step={1} */}
-
-      {/*   valueLabelDisplay="auto" */}
-      {/*   marks={[ */}
-      {/*       { */}
-      {/*           value: 0, */}
-      {/*           label: '0-faster', */}
-      {/*       }, */}
-      {/*       { */}
-      {/*           value: 20, */}
-      {/*           label: '20-low', */}
-      {/*       }, */}
-      {/*       { */}
-      {/*           value: 40, */}
-      {/*           label: '40-mid', */}
-      {/*       }, */}
-      {/*       { */}
-      {/*           value: 100, */}
-      {/*           label: '100-slow', */}
-      {/*       }, */}
-      {/*   ]} */}
-      {/* /> */}
-    </div>
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <div className="content   bg-gray-800">
+        {timerRunning && <h1>{timerTitle}</h1>}
+        <TimerSpeedSelector onSpeedChange={setSpeedFactor} />
+        <TimerUI
+          onTimerStart={(initialTime) => {
+            setTimerRunning(true);
+            setTimerSeconds(Math.floor(initialTime / 1000));
+          }}
+          speedFactor={speedFactor}
+        />
+      </div>
+    </ThemeProvider>
   );
 }

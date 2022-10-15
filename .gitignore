@@ -2,6 +2,7 @@
 
 .parcel*
 .log*
+/build*
 /dist*
 # dependencies
 /node_modules

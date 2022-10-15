@@ -1,0 +1,161 @@
+import React, {useEffect, useState} from "react";
+import {useInterval, useTimeout} from "ahooks";
+import {TextField} from "@mui/material";
+import {css} from "@emotion/css";
+import {Line, Circle} from "rc-progress";
+
+import "./timer.css"
+import AnimatedProgress from "./AnimatedProgress";
+
+import useDelayedSound from "./useDelayedSound";
+
+function playSound(url) {
+  var audio = document.createElement("audio");
+  audio.style.display = "none";
+  audio.src = url;
+  audio.autoplay = true;
+  audio.onended = function () {
+    audio.remove(); //Remove when played.
+  };
+  document.body.appendChild(audio);
+}
+
+export default function VariableSpeedTimer({
+  speedFactor,
+  initialTime,
+    initialSeconds,
+    setInitialSeconds,
+    initialMinutes,
+    setInitialMinutes,
+  hoverTimeout = 3000,
+}) {
+  const [valToEval, setValToEval] = useState("");
+  const [lastRun, setLastRun] = useState("");
+
+  const [currentSpeedFactor, setCurrentSpeedFactor] = useState(speedFactor);
+  const [currentInterval, setCurrentInterval] = useState(0);
+  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(null);
+
+    
+    const [enabled,setEnabled] =useState(false);
+    
+  const [hovering, setHovering] = useState(false);
+  const secondsToTime = (seconds) =>
+    `${Math.floor(seconds / 60)}:${
+      seconds % 60 === 0 ? "00" : (seconds % 60).toFixed(4)
+    }`;
+  const [seconds, setSeconds] = useState(initialTime);
+
+  const nDigitNum = (n) => Math.floor((Math.random() * Math.pow(10, n)) % 60);
+
+  useEffect(() => {
+      const newSpeedFactor=(hovering ? 1 : speedFactor);
+      setCurrentSpeedFactor(newSpeedFactor)
+      setEstimatedTimeRemaining((seconds / newSpeedFactor) * 1000); 
+  }, [hovering]);
+
+  useTimeout(() => setHovering(false), hovering ? hoverTimeout : null);
+
+  useEffect(() => {
+    if (seconds === 0) playSound("https://m.khal.me/files/sound/2ding.mp3");
+  }, [seconds]);
+
+  const updateMSintreval = 151;
+
+  useInterval(
+    () => {
+      setSeconds((secondCount) => (secondCount === 0 ? 0 : secondCount - 1));
+    },
+    currentInterval ? currentInterval / currentSpeedFactor : null,
+  );
+
+  const iniitalTotalSeconds = initialTime / currentSpeedFactor;
+
+
+  const paused = currentInterval == 0;
+
+  const start = () => {
+    // console.log("start, ", new Date(), "seconds", seconds / currentSpeedFactor);
+    setCurrentInterval(1000);
+      setEnabled(true);
+  };
+  const stopTimer = () => {
+    // console.log("stop, ", new Date(), "seconds", seconds / currentSpeedFactor);
+    setCurrentInterval(null);
+  };
+
+  const currentProgress = seconds / currentSpeedFactor / iniitalTotalSeconds;
+
+  return (
+      <>
+    <div className="timer">
+
+
+        <AnimatedProgress
+          className={css`
+          display: ${hovering ? "none" : "initial"};
+          background-color: blue;
+        `}
+          key={estimatedTimeRemaining}
+          startingPercent={currentProgress * 100}
+          paused={paused}
+          initialTimeUntilEnd={estimatedTimeRemaining}
+        />
+      {!enabled &&
+      <div className="inputs">
+      <TextField
+        id="standard-number"
+        label="Minutes"
+        value={initialMinutes}
+        onChange={(e) => setInitialMinutes(Number(e.target.value))}
+        sx={{width: 50}}
+        inputProps={{maxLength: 2}}
+        type="number"
+        variant="standard"
+      />
+      <TextField
+        id="standard-number"
+        label="Seconds"
+        value={initialSeconds}
+        onChange={(e) => setInitialSeconds(Number(e.target.value))}
+        sx={{width: 50}}
+        inputProps={{maxLength: 2}}
+        type="number"
+        variant="standard"
+      />
+      </div>
+      }
+      <div
+        onMouseLeave={() => setHovering(false)}
+        onMouseOver={() => setHovering(true)}
+        className={css`
+          height: 10em;
+          width: 10em;
+          display: flex;
+          place-items: center;
+          justify-content: center;
+        `}
+        data-testid="timer"
+      >
+        {enabled&&
+        <div
+          className={css`
+            display: ${hovering ? "initial" : "none"};
+          `}
+        >
+          {Math.floor(seconds / 60)}:
+          {seconds % 60 < 10 ? "0" + (seconds % 60) : seconds % 60}
+        </div>
+        }
+      </div>
+    </div>
+      <div className="controls">
+      <button onClick={start} disabled={currentInterval > 0}>
+        Start
+      </button>
+      <button onClick={stopTimer} disabled={currentInterval === 0}>
+      Stop
+      </button>
+      </div></>
+  );
+}
