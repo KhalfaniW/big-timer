@@ -9,7 +9,6 @@ import Tween, {Easing} from "tweenkle";
 import {throttle} from "lodash";
 export default function AnimatedProgress({
   percent,
-  initialTimeUntilEnd,
   paused,
   ...otherProps
 }) {

@@ -1,74 +1,39 @@
 import React, {useEffect, useState} from "react";
 
-import {TextField} from "@mui/material";
-import {css} from "@emotion/css";
-import {Line, Circle} from "rc-progress";
-import {useTimeout} from "ahooks";
+import {Circle} from "rc-progress";
 
 import "./index.css";
 
-import useDelayedSound from "../useDelayedSound";
-import useVariableSpeedTimer from "../useVariableSpeedTimer";
+function getTimerDisplay({timeRemaining, shouldShowMSForMinutes}) {
+  const totalMilliseconds = timeRemaining;
+  const {minutes, seconds, milliseconds} = {
+    minutes: Math.trunc(totalMilliseconds / 60_000) % 60,
+    seconds: Math.trunc(totalMilliseconds / 1000) % 60,
+    milliseconds: Math.trunc(totalMilliseconds) % 1000,
+  };
 
-import {playRemoteSound} from "../sound";
+  const secondsDisplay = seconds.toString().padStart(2, "0");
+  const millisecondsDisplay = milliseconds.toString().padStart(3, "0");
+
+  if (minutes === 0) return `0:${secondsDisplay}.${millisecondsDisplay}`;
+
+  if (shouldShowMSForMinutes)
+    return `${minutes}:${secondsDisplay}.${millisecondsDisplay}`;
+  else return `${minutes}:${secondsDisplay}`;
+}
 
 export default function VariableSpeedTimer({
-  speedFactor,
-    onTimeChange,
-    //TODO simplify props replace with initial time
-  initialSeconds = 0,
+  timeRemaining,
+  totalTime,
+  initialMinutes,
+  onMinutesChange,
+  initialSeconds,
+  onSecondsChange,
   setInitialSeconds,
-  initialMinutes = 0,
-  setInitialMinutes,
-
+  //TODO simplify props replace with initial time
   started,
-  hoverTimeout = 3000,
-
 }) {
-  const [lastRun, setLastRun] = useState("");
-
-  const initialTime = (initialMinutes * 60 + initialSeconds) * 1000;
-
-  const {
-    start,
-    pause,
-    currentSpeedFactor,
-    running,
-    currentInterval,
-    // remove and replace with prop change
-    setSpeedFactor,
-    timeRemaining,
-    realTimeElapsed,
-  } = useVariableSpeedTimer({
-    speedFactor,
-    started,
-    initialTime: (initialMinutes * 60 + initialSeconds) * 1000,
-  });
-
   const [hovering, setHovering] = useState(false);
-
-
-
-  useEffect(() => {
-    const newSpeedFactor = hovering ? 1 : speedFactor;
-    setSpeedFactor(newSpeedFactor);
-  }, [hovering]);
-
-  useTimeout(() => setHovering(false), hovering ? hoverTimeout : null);
-
-  useEffect(() => {
-      onTimeChange(timeRemaining)
-    if (timeRemaining === 0)
-      playRemoteSound("https://m.khal.me/files/sound/2ding.mp3");
-  }, [timeRemaining]);
-
-    const seconds = Math.floor(timeRemaining / 1000);
-  const updateMSintreval = 151;
-  const iniitalTotalSeconds = initialTime / currentSpeedFactor / 1000;
-  const currentProgress = seconds / currentSpeedFactor / iniitalTotalSeconds;
-
-  const paused = Boolean(currentInterval);
-  // if(!window.stopdebug)   debugger;
 
   return (
     <div className="stack-container">
@@ -86,51 +51,36 @@ export default function VariableSpeedTimer({
       )}
 
       <Circle
-        className={css`
-          opacity: ${hovering ? "0%" : "100%"};
-        `}
-        key={timeRemaining}
+        key={timeRemaining }
         strokeWidth={1}
-        strokeColor="brown"
-        percent={(timeRemaining / initialTime) * 100}
-        paused={paused}
-        initialTimeUntilEnd={timeRemaining}
+        strokeColor="blue"
+        percent={(timeRemaining / totalTime) * 100}
       />
 
       {started ? (
-        <div
-          className={
-            css`
-              ${!hovering && "display: none"};
-            ` + " timer"
-          }
-          data-testid="timer"
-        >
-          {Math.floor(seconds / 60)}:
-          {seconds % 60 < 10 ? "0" + (seconds % 60) : seconds % 60}
+        <div className={"timer"} data-testid="timer">
+          {getTimerDisplay({timeRemaining, shouldShowMSForMinutes: hovering})}
         </div>
       ) : (
         <div className="inputs">
-          <TextField
-            id="standard-number"
-            label="Minutes"
-            value={initialMinutes}
-            onChange={(e) => setInitialMinutes(Number(e.target.value))}
-            sx={{width: 50}}
-            inputProps={{maxLength: 2}}
-            type="number"
-            variant="standard"
-          />
-          <TextField
-            id="standard-number"
-            label="Seconds"
-            value={initialSeconds}
-            onChange={(e) => setInitialSeconds(Number(e.target.value))}
-            sx={{width: 50}}
-            inputProps={{maxLength: 2}}
-            type="number"
-            variant="standard"
-          />
+          <label>
+            Minutes
+            <input
+              type="number"
+              maxLength="2"
+              value={initialMinutes}
+              onChange={(e) => onMinutesChange(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Seconds
+            <input
+              type="number"
+              maxLength="2"
+              value={initialSeconds}
+              onChange={(e) => onSecondsChange(Number(e.target.value))}
+            />
+          </label>
         </div>
       )}
     </div>

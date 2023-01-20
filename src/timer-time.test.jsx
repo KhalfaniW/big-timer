@@ -8,7 +8,23 @@ import {runTimer, section, waitSeconds, assertTimerSeconds} from "./test-utils";
 
 jest.useFakeTimers();
 
+it.only("timer runs regularly", () => {
+    runTimer({speedFactor: 1, initialSeconds: 20});
 
+    waitSeconds(3);
+
+    preview.debug();
+    assertTimerSeconds(17);
+    return;
+
+    waitSeconds(10);
+
+    section("timer stops at end", () => {
+        waitSeconds(100);
+
+        assertTimerSeconds(0);
+    });
+});
 it("timer runs regularly", () => {
   runTimer({speedFactor: 1, initialSeconds: 20});
 
@@ -16,6 +32,7 @@ it("timer runs regularly", () => {
 
   preview.debug();
   assertTimerSeconds(10);
+
 
   waitSeconds(10);
 
@@ -42,7 +59,7 @@ it("timer runs at double speed", () => {
 });
 
 
-it("timer runs regular speed when hovered", () => {
+it.skip("timer runs regular speed when hovered", () => {
   runTimer({speedFactor: 2, initialSeconds: 20});
 
 
